@@ -69,4 +69,42 @@ class GameMap {
         }
 
     }
+
+    @Composable
+    fun createMarkers() {
+        val markerSet = remember { mutableListOf<LatLng>() }
+        markerSet.add(generateCoordinates(10, 2000)) // create markers between 10 to 2000 meters away
+    }
+
+    @SuppressLint("MissingPermission")
+    fun generateCoordinates(minMeters: Int, maxMeters: Int): LatLng {
+
+        val fusedLocationClient: FusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(Activity().applicationContext);
+
+        val coordinates: LatLng
+        val currentLong: Double
+        val currentLat: Double
+        val meterCord = 0.00900900900901 / 1000
+        //Generate random Meters between the maximum and minimum Meters
+        val r = Random()
+        val randomMeters: Int = r.nextInt(minMeters+ maxMeters)
+        //then Generating Random numbers for different Methods
+        val randomPM: Int = r.nextInt(6)
+
+        //Then we convert the distance in meters to coordinates by Multiplying number of meters with 1 Meter Coordinate
+        val metersCordN = meterCord * randomMeters.toDouble()
+        val locationResult = fusedLocationClient.lastLocation
+        currentLong = locationResult.result.longitude
+        currentLat= locationResult.result.latitude
+        coordinates = when (randomPM) {
+            0 -> LatLng(currentLat + metersCordN, currentLong + metersCordN)
+            1 -> LatLng(currentLat - metersCordN, currentLong - metersCordN)
+            2 -> LatLng(currentLat + metersCordN, currentLong - metersCordN)
+            3 -> LatLng(currentLat - metersCordN, currentLong + metersCordN)
+            4 -> LatLng(currentLat, currentLong - metersCordN)
+            else -> LatLng(currentLat - metersCordN, currentLong)
+        }
+
+        return coordinates
+    }
 }
