@@ -1,10 +1,28 @@
 [
   {
-    "featureType": "poi",
+    "featureType": "landscape",
+    "elementType": "geometry.fill",
+    "stylers": [
+      {
+        "color": "#000000"
+      }
+    ]
+  },
+  {
+    "featureType": "all",
     "elementType": "labels",
     "stylers": [
       {
         "visibility": "off"
+      }
+    ]
+  },
+  {
+    "featureType": "road",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#FF0000"
       }
     ]
   },
@@ -28,7 +46,17 @@
   },
   {
     "featureType": "poi",
-    "elementType": "labels.icon",
+    "elementType": "geometry.fill",
+    "stylers": [
+      {
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+
+  {
+    "featureType": "poi",
+    "elementType": "labels",
     "stylers": [
       {
         "visibility": "off"
