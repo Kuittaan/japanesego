@@ -40,7 +40,7 @@ import com.google.maps.android.compose.MarkerState
 class GameView {
 
     @Composable
-    fun createMenu() {
+    fun createMenu(activity: MainActivity) {
 
         var selectedItem by remember { mutableStateOf(0) }
         val navController = rememberNavController()
@@ -105,20 +105,14 @@ class GameView {
                         .fillMaxSize()
                         .padding(paddingValues = innerPadding)
                 ) {
-                    addMap()
+                    addMap(activity)
                 }
             }
         )
     }
 
     @Composable
-    fun addMap() {
-        GameMap().createMap()
-    }
-
-    @Preview
-    @Composable
-    fun SimpleComposablePreview() {
-        createMenu()
+    fun addMap(activity: MainActivity) {
+        GameMap().createMap(activity)
     }
 }

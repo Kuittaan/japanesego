@@ -1,6 +1,7 @@
 package org.kuittaan.japanesego
 
 import android.Manifest
+import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.LocationManager
@@ -29,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import org.kuittaan.japanesego.ui.theme.JapaneseGoTheme
 import com.google.android.gms.maps.model.LatLng
@@ -44,22 +46,34 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             JapaneseGoTheme {
+
                 // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    GameView().createMenu()
+                    askPermission(this)
+                    GameView().createMenu(this)
                 }
             }
         }
     }
 }
 
-@Composable
-fun createUI() {
+fun askPermission(activity: Activity) {
 
-    fun askPermission() {
+    val isPermissionGranted = ActivityCompat.checkSelfPermission(
+        activity,
+        Manifest.permission.ACCESS_FINE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
 
+    if (!isPermissionGranted) {
+        // You can display a UI explaining why you need this permission before requesting.
+        // Optionally, you can use a dialog or a Snackbar for this purpose.
+        ActivityCompat.requestPermissions(
+            activity,
+            arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION),
+            1
+        )
     }
 }
