@@ -16,6 +16,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,6 +29,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MapStyleOptions
+import com.google.android.gms.tasks.Task
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.Marker
@@ -35,9 +37,10 @@ import com.google.maps.android.compose.MarkerInfoWindowContent
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.Random
 
-//todo: päivitä oma sijainti, luo jutut kartalle, ominaisuus jolla jutut voi kerätä. 頑張れ
+//todo: collect items
 
 class GameMap {
 
@@ -61,6 +64,7 @@ class GameMap {
                 5000,
                 2f
             ) { location ->
+
             }
         }
 
@@ -77,7 +81,7 @@ class GameMap {
                         5f
                     ) { location ->
                         deviceLatLng = LatLng(location.latitude, location.longitude)
-                        Log.e("position now", "${location.latitude} ${location.longitude}")
+                        Log.e("device position", "${location.latitude} ${location.longitude}")
                     }
                 }
                 delay(5000)
@@ -94,7 +98,7 @@ class GameMap {
 
         // Start the map from current position
         val cameraPositionState = rememberCameraPositionState {
-            position = CameraPosition.fromLatLngZoom(LatLng(deviceLatLng.latitude, deviceLatLng.longitude), 10f)
+            position = CameraPosition.fromLatLngZoom(LatLng(deviceLatLng.latitude, deviceLatLng.longitude), 1f)
         }
 
         var lastKnownLocation by remember {
@@ -115,11 +119,23 @@ class GameMap {
             }
         }
 
-        GoogleMap(
+        // Create collectible location and update it everry 5 seconds
+        var collectibleCoordinate = remember { mutableStateOf(LatLng(0.0, 0.0)) }
+        LaunchedEffect(key1 = true) {
+            while(true) {
+                val value = generateRandomLocation(deviceLatLng, 10, 2000)
+                Log.e("collectible position", "$value")
+                collectibleCoordinate.value = LatLng(value.latitude, value.longitude)
+                delay(5000)
+            }
+        }
+
+        GoogleMap (
             modifier = Modifier.fillMaxSize(),
             properties = mapProperties,
             cameraPositionState = cameraPositionState
         ) {
+            // Create marker for device position
             MarkerInfoWindowContent(
                 state = MarkerState(
                     position = deviceLatLng
@@ -128,80 +144,58 @@ class GameMap {
             ) { marker ->
                 Text(marker.title ?: "You", color = Color.Red)
             }
+
+            // Create a marker to collect
+            MarkerInfoWindowContent(
+                state = MarkerState(
+                    position = collectibleCoordinate.value
+                )
+            ) {
+                // Check if the marker is close enough to device position. todo: If it is, enable "picking it up"
+                Log.e("marker here", "$it")
+                val results = FloatArray(3)
+                Location.distanceBetween(
+                    deviceLatLng.latitude,
+                    deviceLatLng.longitude,
+                    it.position.latitude,
+                    it.position.longitude,
+                    results
+                )
+            }
         }
     }
 
-    private fun getCurrentLocation(context: Context): LatLng {
+    private fun generateRandomLocation(currentLocation: LatLng, min: Int, max: Int): LatLng {
 
-        var latitude = 1.0
-        var longitude = -1.0
+        val currentLong: Double = currentLocation.longitude
+        val currentLat: Double = currentLocation.latitude
 
-        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-
-        if (ActivityCompat.checkSelfPermission(
-                context,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            // TODO: show error screen if fine location permission is not granted
-            Log.d("Error", "No permission to access fine location")
-        }
-
-        locationManager.requestLocationUpdates(
-            LocationManager.GPS_PROVIDER,
-            5000,
-            5f
-        ) { location ->
-            latitude = location.latitude
-            longitude = location.longitude
-        }
-
-        // returns (1.0,-1.0) if location was not received
-        Log.e("data", "$latitude , $longitude")
-        return LatLng(latitude, longitude)
-    }
-
-    @Composable
-    fun createMarkers(amount: Int, activity: Activity) {
-        val markerSet = remember { mutableListOf<Unit>() }
-
-        var marker = Marker(
-            state =  MarkerState(position = LatLng(10.0, 10.0)),
-            title = "collectible",
-        )
-
-        markerSet.add(marker)
-    }
-
-    @SuppressLint("MissingPermission")
-    fun generateCoordinates(minMeters: Int, maxMeters: Int, activity: Activity, onSuccess: (LatLng) -> Unit) {
-        val fusedLocationClient = LocationServices.getFusedLocationProviderClient(activity)
-
+        // 1 Meter = 0.00900900900901 / 1000
         val meterCord = 0.00900900900901 / 1000
-        //Generate random Meters between the maximum and minimum Meters
-        val r = Random()
-        val randomMeters: Int = r.nextInt(minMeters + maxMeters)
-        //then Generating Random numbers for different Methods
-        val randomPM: Int = r.nextInt(6)
 
-        //Then we convert the distance in meters to coordinates by Multiplying number of meters with 1 Meter Coordinate
+        // Generate random Meters between the maximum and minimum Meters
+        val r = Random()
+        val randomMeters: Int = r.nextInt(max + min)
+
+        // Generate number for directions
+        val randomDir: Int = r.nextInt(6)
+
+        // Convert the distance in meters to coordinates
         val metersCordN = meterCord * randomMeters.toDouble()
 
-        fusedLocationClient.lastLocation.addOnSuccessListener(activity
-        ) { locationResult ->
-            val currentLong = locationResult?.longitude ?: 0.0
-            val currentLat = locationResult?.latitude ?: 0.0
-
-            val coordinates = when (randomPM) {
-                0 -> LatLng(currentLat + metersCordN, currentLong + metersCordN)
-                1 -> LatLng(currentLat - metersCordN, currentLong - metersCordN)
-                2 -> LatLng(currentLat + metersCordN, currentLong - metersCordN)
-                3 -> LatLng(currentLat - metersCordN, currentLong + metersCordN)
-                4 -> LatLng(currentLat, currentLong - metersCordN)
-                else -> LatLng(currentLat - metersCordN, currentLong)
-            }
-
-            onSuccess(coordinates)
+        // Return coordinate based on direction and distance
+        return if (randomDir == 0) {
+            LatLng(currentLat + metersCordN, currentLong + metersCordN)
+        } else if (randomDir == 1) {
+            LatLng(currentLat - metersCordN, currentLong - metersCordN)
+        } else if (randomDir == 2) {
+            LatLng(currentLat + metersCordN, currentLong - metersCordN)
+        } else if (randomDir == 3) {
+            LatLng(currentLat - metersCordN, currentLong + metersCordN)
+        } else if (randomDir == 4) {
+            LatLng(currentLat, currentLong - metersCordN)
+        } else {
+            LatLng(currentLat - metersCordN, currentLong)
         }
     }
 
