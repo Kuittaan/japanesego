@@ -9,9 +9,11 @@ import android.graphics.Bitmap
 import android.location.Location
 import android.location.LocationManager
 import android.util.Log
+import android.widget.Button
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,8 +41,6 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Random
-
-//todo: collect items
 
 class GameMap {
 
@@ -81,7 +81,7 @@ class GameMap {
                         5f
                     ) { location ->
                         deviceLatLng = LatLng(location.latitude, location.longitude)
-                        Log.e("device position", "${location.latitude} ${location.longitude}")
+                        Log.d("device position", "${location.latitude} ${location.longitude}")
                     }
                 }
                 delay(5000)
@@ -105,8 +105,8 @@ class GameMap {
             mutableStateOf<Location?>(null)
         }
 
+        // Set initial device location and camera position
         val fusedLocationClient = LocationServices.getFusedLocationProviderClient(activity)
-
         val locationResult = fusedLocationClient.lastLocation
         locationResult.addOnCompleteListener(context as MainActivity) { task ->
             if (task.isSuccessful) {
@@ -119,12 +119,12 @@ class GameMap {
             }
         }
 
-        // Create collectible location and update it everry 5 seconds
+        // Create collectible location and update it every 5 seconds
         var collectibleCoordinate = remember { mutableStateOf(LatLng(0.0, 0.0)) }
         LaunchedEffect(key1 = true) {
             while(true) {
                 val value = generateRandomLocation(deviceLatLng, 10, 2000)
-                Log.e("collectible position", "$value")
+                Log.d("collectible position", "$value")
                 collectibleCoordinate.value = LatLng(value.latitude, value.longitude)
                 delay(5000)
             }
@@ -148,11 +148,16 @@ class GameMap {
             // Create a marker to collect
             MarkerInfoWindowContent(
                 state = MarkerState(
-                    position = collectibleCoordinate.value
-                )
+                    position = deviceLatLng
+                ),
+                icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW),
+                onInfoWindowClick = {
+                    Log.d("Yellow/Green marker", "was collected")
+                }
             ) {
-                // Check if the marker is close enough to device position. todo: If it is, enable "picking it up"
-                Log.e("marker here", "$it")
+                Text(it.title ?: "Catch me!", color = Color.Red)
+
+                // Check if the marker is close enough to device position.
                 val results = FloatArray(3)
                 Location.distanceBetween(
                     deviceLatLng.latitude,
@@ -161,6 +166,43 @@ class GameMap {
                     it.position.longitude,
                     results
                 )
+
+                // Change marker color when it can be picked up
+                LaunchedEffect(key1 = results[0]) {
+                    if(results[0] < 1) {
+                        it.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))
+                    } else {
+                        it.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW))
+                    }
+                }
+            }
+
+            // Create a marker to collect
+            MarkerInfoWindowContent(
+                state = MarkerState(
+                    position = collectibleCoordinate.value
+                )
+            ) {
+                Text(it.title ?: "I move every 5 seconds", color = Color.Red)
+
+                // Check if the marker is close enough to device position.
+                val results = FloatArray(3)
+                Location.distanceBetween(
+                    deviceLatLng.latitude,
+                    deviceLatLng.longitude,
+                    it.position.latitude,
+                    it.position.longitude,
+                    results
+                )
+
+                // Change marker color when it can be picked up
+                LaunchedEffect(key1 = results[0]) {
+                    if(results[0] < 1) {
+                        it.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))
+                    } else {
+                        it.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
+                    }
+                }
             }
         }
     }
@@ -199,7 +241,7 @@ class GameMap {
         }
     }
 
-    fun bitmapDescriptorFromVector(context: Context, vectorResId: Int): BitmapDescriptor? {
+    private fun bitmapDescriptorFromVector(context: Context, vectorResId: Int): BitmapDescriptor? {
 
         val drawable = ContextCompat.getDrawable(context, vectorResId) ?: return null
         drawable.setBounds(0, 0, drawable.intrinsicWidth, drawable.intrinsicHeight)

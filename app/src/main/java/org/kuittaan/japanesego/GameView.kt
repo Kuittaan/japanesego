@@ -1,9 +1,5 @@
 package org.kuittaan.japanesego
 
-import android.Manifest
-import android.content.Context
-import android.content.pm.PackageManager
-import android.location.LocationManager
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,11 +9,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Menu
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,25 +20,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.navigation.compose.rememberNavController
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.MarkerState
-
 class GameView {
 
     @Composable
     fun createMenu(activity: MainActivity) {
-
-        var selectedItem by remember { mutableStateOf(0) }
-        val navController = rememberNavController()
 
         Scaffold(
             bottomBar = {
@@ -56,13 +39,13 @@ class GameView {
                     NavigationBarItem(
                         selected = false,
                         onClick = {
-                            navController.navigate("settings")
+                            // todo: center camera to current position
                         },
                         //Other parts will be the same
                         icon = {
                             Icon(
-                                imageVector = Icons.Outlined.Settings,
-                                contentDescription = "Settings Icon",
+                                imageVector = Icons.Outlined.LocationOn,
+                                contentDescription = "Location Icon",
                                 modifier = Modifier.size(42.dp),
                                 tint = colorResource(id = R.color.white_red)
                             )
@@ -71,7 +54,8 @@ class GameView {
                     NavigationBarItem(
                         selected = false,
                         onClick = {
-                            navController.navigate("menu")
+                            // todo: create bottomsheet that shows info
+
                         },
                         icon = {
                             Icon(
@@ -85,7 +69,7 @@ class GameView {
                     NavigationBarItem(
                         selected = false,
                         onClick = {
-                            navController.navigate("profile")
+                            // todo: show user info
                         },
                         icon = {
                             Icon(
@@ -112,7 +96,7 @@ class GameView {
     }
 
     @Composable
-    fun addMap(activity: MainActivity) {
+    private fun addMap(activity: MainActivity) {
         GameMap().createMap(activity)
     }
 }
